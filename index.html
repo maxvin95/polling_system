@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Voting App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #polls {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .poll-container {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        h3 {
+            color: #333;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+       
+        .option {
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            margin: 10px 0;
+            text-align: center;
+}
+        li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        
+
+        button {
+            margin:10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #create-poll-form {
+            margin: 20px auto;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #create-poll-form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #create-poll-form input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #create-poll-form button[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #create-poll-form button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vote on a Poll</h1>
+
+    <div id="polls"></div>
+    
+    <h2>Create a New Poll</h2>
+    <form id="create-poll-form">
+        <label for="poll-question">Question</label>
+        <input type="text" id="poll-question" required>
+    
+        <label for="poll-options">Options (comma-separated)</label>
+        <input type="text" id="poll-options" required>
+    
+        <button type="submit">Create Poll</button>
+    </form>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io('http://localhost:3000');
+    
+        socket.on('polls', (polls) => {
+            const pollsDiv = document.getElementById('polls');
+            pollsDiv.innerHTML = '';
+    
+            polls.forEach((poll, index) => {
+                const pollDiv = document.createElement('div');
+                pollDiv.innerHTML = `
+                    <h3>${poll.question}</h3>
+                    <ul>
+                        ${poll.options.map((option, i) => `
+                            <div class= option>
+                            <li>
+                                ${option.name} =>
+                                <button onclick="vote(${index}, ${i})">Vote</button>
+                                <span id="option-${index}-${i}">Votes: ${poll.votes[i]}</span>
+                            </li>
+                            </div>
+                        `).join('')}
+                    </ul>
+                `;
+                pollsDiv.appendChild(pollDiv);
+            });
+        });
+    
+        function vote(pollId, optionIndex) {
+            socket.emit('vote', pollId, optionIndex);
+        }
+    
+        document.getElementById('create-poll-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const question = document.getElementById('poll-question').value;
+            const options = document.getElementById('poll-options').value;
+    
+            // Ensure that the question and options are not empty
+            if (question && options) {
+                socket.emit('create-poll', question, options);
+            }
+    
+            // Clear the form fields after creating the poll
+            document.getElementById('poll-question').value = '';
+            document.getElementById('poll-options').value = '';
+        });
+    </script>
+</body>
+</html>
